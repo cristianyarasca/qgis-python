@@ -1,0 +1,24 @@
+from qgis.core import QgsVectorLayer, QgsFeature, QgsGeometry, QgsPointXY, QgsProject
+
+# Crear una capa de memoria para líneas, utilizando el sistema de coordenadas EPSG:4326 (lat/lon)
+layer = QgsVectorLayer("LineString?crs=EPSG:4326", "Lima-Arequipa", "memory")
+prov = layer.dataProvider()
+
+# Definir las coordenadas de Lima y Arequipa (formato: QgsPointXY(longitud, latitud))
+# Coordenadas aproximadas:
+punto_lima = QgsPointXY(-77.042793, -12.046374)     # Lima
+punto_arequipa = QgsPointXY(-71.537450, -16.398890)   # Arequipa
+
+# Crear la geometría de línea a partir de los dos puntos
+linea = QgsGeometry.fromPolylineXY([punto_lima, punto_arequipa])
+
+# Crear el feature (elemento de la capa) y asignarle la geometría
+feature = QgsFeature()
+feature.setGeometry(linea)
+
+# Añadir el feature a la capa
+prov.addFeatures([feature])
+layer.updateExtents()
+
+# Agregar la capa al proyecto para visualizarla en el mapa
+QgsProject.instance().addMapLayer(layer)
