@@ -1,0 +1,57 @@
+from qgis.core import (
+    QgsProject,
+    QgsVectorLayer,
+    QgsFeature,
+    QgsGeometry,
+    QgsPointXY,
+    QgsVectorFileWriter,
+    QgsWkbTypes,
+    QgsField,
+    QgsFields
+)
+from qgis.PyQt.QtCore import QVariant
+
+# Obtener la capa de entrada "Cap_Distrito"
+input_layer_list = QgsProject.instance().mapLayersByName("Cap_Distrito")
+if not input_layer_list:
+    raise Exception('La capa "Cap_Distrito" no se encuentra cargada en el proyecto.')
+layer = input_layer_list[0]
+
+# Definir la ruta de salida para el nuevo shapefile
+output_path = "/Users/cristianyarasca/Desktop/Cristian/lineas_horizontal.shp"
+
+# Definir los campos para la nueva capa (en este ejemplo se añade un campo 'id')
+fields = QgsFields()
+fields.append(QgsField("id", QVariant.Int))
+
+# Crear el escritor de vector (shapefile) para una capa de líneas, usando el mismo CRS que la capa de entrada
+writer = QgsVectorFileWriter(output_path, "UTF-8", fields, QgsWkbTypes.LineString, layer.crs(), "ESRI Shapefile")
+
+# Iterar sobre cada feature de la capa "Cap_Distrito"
+for i, feat in enumerate(layer.getFeatures()):
+    # Extraer las coordenadas X (longitud) y Y (latitud) desde los atributos
+    x = feat["X"]
+    y = feat["Y"]
+    
+    # Crear la geometría de la línea: desde el punto (x, y) hasta (-80, y)
+    line_geom = QgsGeometry.fromPolylineXY([QgsPointXY(x, y), QgsPointXY(-80, y)])
+    
+    # Crear el nuevo feature y asignarle el campo y la geometría
+    new_feat = QgsFeature()
+    new_feat.setFields(fields)
+    new_feat.setAttribute("id", i)
+    new_feat.setGeometry(line_geom)
+    
+    # Añadir el feature al escritor
+    writer.addFeature(new_feat)
+
+# Finalizar la escritura del shapefile
+del writer
+
+# Cargar la nueva capa en el proyecto
+new_layer = QgsVectorLayer(output_path, "Lineas_Horizontales", "ogr")
+if new_layer.isValid():
+    QgsProject.instance().addMapLayer(new_layer)
+    print("La capa de líneas horizontales se agregó correctamente al proyecto.")
+else:
+    print("Error al cargar la capa de líneas horizontales.")
