@@ -1,0 +1,30 @@
+import processing
+from qgis.core import QgsProject
+
+# 1. Seleccionar la capa cargada en QGIS por su nombre (modifica "MiShapefile" por el nombre real de tu capa)
+layer_name = "MiShapefile"
+input_layers = QgsProject.instance().mapLayersByName(layer_name)
+if not input_layers:
+    raise Exception(f'La capa "{layer_name}" no se encuentra cargada en el proyecto.')
+input_layer = input_layers[0]
+
+# 2. Disolver todas las geometrías para unir todos los polígonos en una sola entidad
+dissolve_params = {
+    'INPUT': input_layer,
+    'FIELD': [],       # Sin campos para disolver todos los features en uno solo
+    'OUTPUT': 'memory:'  # Guardar en memoria
+}
+dissolve_result = processing.run("native:dissolve", dissolve_params)
+dissolved_layer = dissolve_result['OUTPUT']
+
+# 3. Extraer el contorno externo de la entidad disuelta
+boundary_params = {
+    'INPUT': dissolved_layer,
+    'OUTPUT': 'memory:'
+}
+boundary_result = processing.run("native:boundary", boundary_params)
+boundary_layer = boundary_result['OUTPUT']
+
+# 4. Agregar la capa resultante al proyecto QGIS
+QgsProject.instance().addMapLayer(boundary_layer)
+print("El contorno externo ha sido extraído y agregado al proyecto.")
