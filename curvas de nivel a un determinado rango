@@ -1,0 +1,35 @@
+import processing
+from qgis.core import QgsProject, QgsVectorLayer
+
+# 1. Seleccionar la capa DEM cargada en QGIS
+layer_name = "DEM"  # Cambia este nombre por el de tu capa si es diferente
+layers = QgsProject.instance().mapLayersByName(layer_name)
+if not layers:
+    raise Exception(f'La capa "{layer_name}" no se encuentra cargada en el proyecto.')
+dem_layer = layers[0]
+
+# 2. Definir la ruta de salida para el shapefile de curvas de nivel
+output_path = "/Users/cristianyarasca/Desktop/Cristian/curvas_nivel.shp"
+
+# 3. Configurar los parámetros para el algoritmo GDAL Contour
+params = {
+    'INPUT': dem_layer,     # Capa raster de entrada
+    'BAND': 1,              # Usar la primera banda (usualmente es la que contiene la elevación)
+    'INTERVAL': 100,        # Intervalo de 100 metros entre curvas
+    'FIELD_NAME': 'ELEV',   # Nombre del campo que contendrá el valor de la elevación en cada curva
+    'OFFSET': 0,            # Desfase (offset) de elevación, normalmente 0
+    'EXTRA': '',
+    'NODATA': None,
+    'OUTPUT': output_path   # Salida en disco como shapefile
+}
+
+# 4. Ejecutar el algoritmo para generar las curvas de nivel
+processing.run("gdal:contour", params)
+
+# 5. Cargar la capa resultante en el proyecto QGIS
+contour_layer = QgsVectorLayer(output_path, "Curvas de Nivel", "ogr")
+if contour_layer.isValid():
+    QgsProject.instance().addMapLayer(contour_layer)
+    print("Curvas de nivel generadas y cargadas exitosamente.")
+else:
+    print("Error al cargar la capa de curvas de nivel.")
